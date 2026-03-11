@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Verifier</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #050505; /* Pitch Black */
+            font-family: 'Rajdhani', sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* Techy Grid Background */
+        body::before {
+            content: "";
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: perspective(500px) rotateX(60deg) translateY(-200px);
+            z-index: -1;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 500px; }
+        }
+
+        .main-container {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .glass-card {
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 15px;
+            width: 400px;
+            padding: 40px;
+            text-align: center;
+            transition: 0.3s;
+            position: relative;
+        }
+
+        /* Glow effects for cards */
+        .admin-card { box-shadow: 0 0 20px rgba(0, 255, 255, 0.2); border-top: 5px solid #00f2ff; }
+        .verify-card { box-shadow: 0 0 20px rgba(188, 19, 254, 0.2); border-top: 5px solid #bc13fe; }
+
+        .glass-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.4);
+        }
+
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .upload-box {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .upload-box:hover {
+            border-color: #00f2ff;
+            background: rgba(0, 255, 255, 0.05);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: 0.3s;
+        }
+
+        .reg-btn {
+            background: #00f2ff;
+            color: #000;
+            box-shadow: 0 0 15px #00f2ff;
+        }
+
+        .ver-btn {
+            background: #bc13fe;
+            color: #fff;
+            box-shadow: 0 0 15px #bc13fe;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            filter: brightness(1.2);
+        }
+
+        .result-box {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .valid { border: 2px solid #00ff00; background: rgba(0, 255, 0, 0.1); color: #00ff00; }
+        .invalid { border: 2px solid #ff0000; background: rgba(255, 0, 0, 0.1); color: #ff0000; }
+        .hidden { display: none; }
+
+        .file-name { margin-top: 10px; font-size: 0.8rem; color: #00f2ff; }
+        #hashText { font-size: 0.6rem; color: #666; word-break: break-all; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <div class="glass-card admin-card">
+            <h2>ISSUER</h2>
+            <p style="color: #666; margin-bottom: 20px;">Register New Certificate</p>
+            <div class="upload-box" onclick="document.getElementById('regIn').click()">
+                <img src="https://cdn-icons-png.flaticon.com/512/2242/2242296.png" width="40" style="filter: invert(1); opacity: 0.5;">
+                <p id="regName" class="file-name">Select PDF File</p>
+                <input type="file" id="regIn" hidden accept="application/pdf">
+            </div>
+            <button class="btn reg-btn" onclick="register()">Add to Ledger</button>
+        </div>
+
+        <div class="glass-card verify-card">
+            <h2>VERIFIER</h2>
+            <p style="color: #666; margin-bottom: 20px;">Check Authenticity</p>
+            <div class="upload-box" onclick="document.getElementById('verIn').click()">
+                <img src="https://cdn-icons-png.flaticon.com/512/702/702797.png" width="40" style="filter: invert(1); opacity: 0.5;">
+                <p id="verName" class="file-name">Select PDF File</p>
+                <input type="file" id="verIn" hidden accept="application/pdf">
+            </div>
+            <button class="btn ver-btn" onclick="verify()">Verify Now</button>
+            
+            <div id="res" class="result-box hidden">
+                <h3 id="stText"></h3>
+                <p id="hText"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ledger = [];
+
+        document.getElementById('regIn').onchange = e => {
+            if(e.target.files[0]) document.getElementById('regName').innerText = e.target.files[0].name;
+        };
+        document.getElementById('verIn').onchange = e => {
+            if(e.target.files[0]) document.getElementById('verName').innerText = e.target.files[0].name;
+        };
+
+        async function hashFile(file) {
+            return new Promise(res => {
+                const r = new FileReader();
+                r.onload = e => res(CryptoJS.SHA256(CryptoJS.lib.WordArray.create(e.target.result)).toString());
+                r.readAsArrayBuffer(file);
+            });
+        }
+
+        async function register() {
+            const f = document.getElementById('regIn').files[0];
+            if(!f) return alert("Please select a PDF!");
+            const h = await hashFile(f);
+            if(ledger.includes(h)) return alert("Already registered!");
+            ledger.push(h);
+            alert("SUCCESS: Certificate registered on Blockchain!");
+        }
+
+        async function verify() {
+            const f = document.getElementById('verIn').files[0];
+            if(!f) return alert("Please select a PDF!");
+            const h = await hashFile(f);
+            const rb = document.getElementById('res');
+            rb.classList.remove('hidden', 'valid', 'invalid');
+            
+            if(ledger.includes(h)) {
+                rb.classList.add('valid');
+                document.getElementById('stText').innerText = "✅ VALID DOCUMENT";
+            } else {
+                rb.classList.add('invalid');
+                document.getElementById('stText').innerText = "❌ INVALID / TAMPERED";
+            }
+            document.getElementById('hText').innerText = "Hash: " + h;
+        }
+    </script>
+</body>
+</html>
